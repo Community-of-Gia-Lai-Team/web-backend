@@ -1,12 +1,25 @@
 import express from 'express'
 import cors from 'cors'
+import fetch from 'node-fetch'
+import querystring from 'querystring'
+
+const API_URL = 'https://api.openweathermap.org/data/2.5/weather'
+const API_KEY = '305510256a262c0c312bf44cf226eecf'
 
 const app = express()
 
 app.use(cors())
 
-app.get('/weather', (req, res) => {
-  res.end('Hello world!')
+app.get('/weather', async (req, res) => {
+  const params = { ...req.query, appid: API_KEY }
+
+  try {
+    const apiRes = await fetch(`${API_URL}?${querystring.encode(params)}`)
+    res.end(await apiRes.text())
+  } catch (e) {
+    console.error(e)
+    res.status(500).end()
+  }
 })
 
 const port = process.env.PORT ?? 8081
