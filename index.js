@@ -11,11 +11,10 @@ const app = express()
 app.use(cors())
 
 app.get('/weather', async (req, res) => {
-  const params = { ...req.query, appid: API_KEY }
-
   try {
+    const params = { ...req.query, appid: API_KEY }
     const apiRes = await fetch(`${API_URL}?${querystring.encode(params)}`)
-    res.end(await apiRes.text())
+    res.json(await apiRes.json())
   } catch (e) {
     console.error(e)
     res.status(500).end()
