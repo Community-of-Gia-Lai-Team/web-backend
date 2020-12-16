@@ -72,7 +72,7 @@ app.get('/register', async (req, res) => {
   }
 })
 
-app.get('/favorites/get', async (req, res) => {
+app.get('/favorites', async (req, res) => {
   const id = req.query['user']
   if (typeof id !== 'string') {
     res.status(500).end()
@@ -92,9 +92,9 @@ app.get('/favorites/get', async (req, res) => {
   stmt.finalize()
 })
 
-app.get('/favorites/add', async (req, res) => {
-  const id = req.query['user']
-  const city = Number(req.query['city'])
+app.post('/favorites', async (req, res) => {
+  const id = req.params['user']
+  const city = Number(req.params['city'])
   if (typeof id !== 'string' || !Number.isInteger(city)) {
     res.status(500).end()
     return
@@ -113,9 +113,9 @@ app.get('/favorites/add', async (req, res) => {
   stmt.finalize()
 })
 
-app.get('/favorites/remove', async (req, res) => {
-  const id = req.query['user']
-  const city = Number(req.query['city'])
+app.delete('/favorites', async (req, res) => {
+  const id = req.params['user']
+  const city = Number(req.params['city'])
   if (typeof id !== 'string' || !Number.isInteger(city)) {
     res.status(500).end()
     return
