@@ -1,31 +1,26 @@
 import express from 'express'
 import cors from 'cors'
-import fetch from 'node-fetch'
-import querystring from 'querystring'
+import bodyParser from 'body-parser'
 import { v4 as uuid } from 'uuid'
-import sqlite3 from 'sqlite3'
+import { Api } from './Api.js'
+import { db } from './db.js'
 
-const API_URL = 'https://api.openweathermap.org/data/2.5/weather'
-const API_KEY = '305510256a262c0c312bf44cf226eecf'
+export const app = express()
 
-const app = express()
-const db = new sqlite3.Database('weather.db')
+const api = new Api()
 
 app.use(cors())
-
-async function sendApiRequest(params) {
-  const apiRes = await fetch(`${API_URL}?${querystring.encode(params)}`)
-  return apiRes.json()
-}
+app.use(bodyParser.json())
 
 app.get('/weather/city', async (req, res) => {
+  const q = req.query['q']
+  if (typeof q !== 'string') {
+    res.status(422).end()
+    return
+  }
+
   try {
-    res.json(await sendApiRequest({
-      lang: 'ru',
-      units: 'metric',
-      q: req.query['q'],
-      appid: API_KEY
-    }))
+    res.json(await api.getWeather({ q }))
   } catch (e) {
     console.error(e)
     res.status(500).end()
@@ -33,14 +28,15 @@ app.get('/weather/city', async (req, res) => {
 })
 
 app.get('/weather/coords', async (req, res) => {
+  const lat = req.query['lat']
+  const lon = req.query['lon']
+  if (typeof lat !== 'string' || typeof lon !== 'string') {
+    res.status(422).end()
+    return
+  }
+
   try {
-    res.json(await sendApiRequest({
-      lang: 'ru',
-      units: 'metric',
-      lat: req.query['lat'],
-      lon: req.query['lon'],
-      appid: API_KEY
-    }))
+    res.json(await api.getWeather({ lat, lon }))
   } catch (e) {
     console.error(e)
     res.status(500).end()
@@ -48,13 +44,14 @@ app.get('/weather/coords', async (req, res) => {
 })
 
 app.get('/weather/id', async (req, res) => {
+  const id = req.query['id']
+  if (typeof id !== 'string') {
+    res.status(422).end()
+    return
+  }
+
   try {
-    res.json(await sendApiRequest({
-      lang: 'ru',
-      units: 'metric',
-      id: req.query['id'],
-      appid: API_KEY
-    }))
+    res.json(await api.getWeather({ id }))
   } catch (e) {
     console.error(e)
     res.status(500).end()
@@ -75,7 +72,7 @@ app.get('/register', async (req, res) => {
 app.get('/favorites', async (req, res) => {
   const id = req.query['user']
   if (typeof id !== 'string') {
-    res.status(500).end()
+    res.status(422).end()
     return
   }
 
@@ -93,16 +90,17 @@ app.get('/favorites', async (req, res) => {
 })
 
 app.post('/favorites', async (req, res) => {
-  const id = req.params['user']
-  const city = Number(req.params['city'])
+  const id = req.body['user']
+  const city = Number(req.body['city'])
+
   if (typeof id !== 'string' || !Number.isInteger(city)) {
-    res.status(500).end()
+    res.status(422).end()
     return
   }
 
   const stmt = db.prepare(`INSERT INTO favorites VALUES (?, ?)`)
 
-  stmt.run([id, city], (err, rows) => {
+  stmt.run([id, city], (err) => {
     if (!err) {
       res.json({ success: true })
     } else {
@@ -114,16 +112,16 @@ app.post('/favorites', async (req, res) => {
 })
 
 app.delete('/favorites', async (req, res) => {
-  const id = req.params['user']
-  const city = Number(req.params['city'])
+  const id = req.body['user']
+  const city = Number(req.body['city'])
   if (typeof id !== 'string' || !Number.isInteger(city)) {
-    res.status(500).end()
+    res.status(422).end()
     return
   }
 
   const stmt = db.prepare(`DELETE FROM favorites WHERE user_id = ? AND city_id = ?`)
 
-  stmt.run([id, city], (err, rows) => {
+  stmt.run([id, city], (err) => {
     if (!err) {
       res.json({ success: true })
     } else {
@@ -132,17 +130,4 @@ app.delete('/favorites', async (req, res) => {
   })
 
   stmt.finalize()
-})
-
-const port = process.env.PORT ?? 8081
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS favorites (
-    user_id TEXT,
-    city_id INTEGER
-  )
-`, () => {
-  app.listen(port, () => {
-    console.log(`App is listening on port ${port}`)
-  })
 })
