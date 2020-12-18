@@ -6,7 +6,8 @@ const port = process.env.PORT ?? 8081
 db.run(`
   CREATE TABLE IF NOT EXISTS favorites (
     user_id TEXT,
-    city_id INTEGER
+    city_id INTEGER,
+    UNIQUE(user_id, city_id)
   )
 `, () => {
   app.listen(port, () => {

@@ -98,7 +98,7 @@ app.post('/favorites', async (req, res) => {
     return
   }
 
-  const stmt = db.prepare(`INSERT INTO favorites VALUES (?, ?)`)
+  const stmt = db.prepare(`INSERT OR IGNORE INTO favorites VALUES (?, ?)`)
 
   stmt.run([id, city], (err) => {
     if (!err) {
